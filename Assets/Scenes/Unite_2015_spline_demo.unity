@@ -532,22 +532,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 803610269}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21723233e99933546933d815625ebb9f, type: 3}
+  m_Script: {fileID: 11500000, guid: 1c4a22883aee8a64a8f52ae7f3b76c0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   controlPoints: []
   controlPointGos: []
   alpha: 0.5
-  line: {fileID: 0}
-  numberOfPoints: 5
-  Material: {fileID: 0}
-  crossSegments: 5
+  line: {fileID: 803610270}
+  interpolationSteps: 5
+  Material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  crossSegments: 6
   crossPoints: []
   lastCrossSegments: 0
   controlPointTags:
   - point
-  - 
-  - 
 --- !u!4 &803610273
 Transform:
   m_ObjectHideFlags: 0
