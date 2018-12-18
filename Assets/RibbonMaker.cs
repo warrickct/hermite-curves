@@ -5,10 +5,11 @@ using System.Linq;
 
 [RequireComponent(typeof(MeshRenderer))]
 [RequireComponent(typeof(MeshFilter))]
-public class SplineMaker2 : MonoBehaviour
+public class RibbonMaker : MonoBehaviour
 {
     //Use the transforms of GameObjects in 3d space as your points or define array with desired points
     public List<Transform> controlPoints = new List<Transform>();
+    public List<GameObject> controlPointGos = new List<GameObject>();
 
     //Store points on the Catmull curve so we can visualize them
     List<Vector3> newPoints = new List<Vector3>();
@@ -25,7 +26,8 @@ public class SplineMaker2 : MonoBehaviour
     private List<Vector3> debugPositions = new List<Vector3>();
 
     // the number of points in between control points
-    public int numberOfPoints;
+    [Tooltip("Number of interpolation points between control points")]
+    public int numberOfPoints = 5;
 
     private MeshRenderer _meshRenderer;
     public Material Material;
@@ -34,7 +36,9 @@ public class SplineMaker2 : MonoBehaviour
     public int lastCrossSegments;
     private Vector3[] interpolatedPositions;
 
-    public class TubeVertex
+	public string[] controlPointTags;
+
+	public class TubeVertex
     {
         public Vector3 point = Vector3.zero;
         public float radius = 4f;
@@ -47,11 +51,10 @@ public class SplineMaker2 : MonoBehaviour
     }
 
     private TubeVertex[] tubeVertices;
-
     private void Start()
     {
-        line.positionCount = controlPoints.Count * numberOfPoints - (numberOfPoints);
-        _meshRenderer = gameObject.GetComponent<MeshRenderer>();
+		line.positionCount = controlPoints.Count * numberOfPoints;
+		_meshRenderer = gameObject.GetComponent<MeshRenderer>();
         _meshRenderer.material = new Material(Material.shader);
     }
 
@@ -59,102 +62,45 @@ public class SplineMaker2 : MonoBehaviour
     {
     }
 
+	private static int SortByName(GameObject o1, GameObject o2)
+	{
+		return o1.name.CompareTo(o2.name);
+	}
+
     private void FixedUpdate()
     {
-        interpolatedPositions = new Vector3[numberOfPoints * controlPoints.Count];
+		controlPoints.Clear();
+		controlPointGos.Clear();
+
+		// TODO: interpolates better using just singular point per residue.
+		// TODO: Alternatively, average the residue vertices and use that as the control point.
+		foreach (var tag in controlPointTags) 
+		{
+			foreach (var go in GameObject.FindGameObjectsWithTag(tag))
+			{
+				controlPointGos.Add(go);
+			}
+		}
+
+		// sort control points by otherwise it grabs them out of order
+		controlPointGos.Sort(SortByName);
+		// add sorted transforms 
+        foreach (var controlPointGo in controlPointGos)
+        {
+			Debug.Log(controlPointGo.name);
+			controlPoints.Add(controlPointGo.transform);
+		}
+
+        // C - C - C- C 
+		interpolatedPositions = new Vector3[numberOfPoints * controlPoints.Count];
+
         tubeVertices = new TubeVertex[numberOfPoints * controlPoints.Count];
-        DynamicSpline(controlPoints);
-        // GizmoSpline(controlPoints);
-        DrawMesh1();
+        InterpolateControlPoints(controlPoints);
+        CreateTubeVertices();
         Show();
     }
 
-    void GizmoSpline(List<Transform> controlPoints)
-    {
-        debugPositions.Clear();
-
-        // position
-        Vector3 p0, p1, m0, m1;
-
-        for (int j = 0; j < controlPoints.Count - 1; j++)
-        {
-            // check control points
-            if (controlPoints[j] == null || controlPoints[j + 1] == null ||
-                (j > 0 && controlPoints[j - 1] == null) ||
-                (j < controlPoints.Count - 2 && controlPoints[j + 2] == null))
-            {
-                return;
-            }
-            // determine control points of segment
-            p0 = controlPoints[j].transform.position;
-            p1 = controlPoints[j + 1].transform.position;
-
-            if (j > 0)
-            {
-                m0 = 0.5f * (controlPoints[j + 1].transform.position - controlPoints[j - 1].transform.position);
-            }
-            else
-            {
-                m0 = controlPoints[j + 1].transform.position - controlPoints[j].transform.position;
-            }
-            if (j < controlPoints.Count - 2)
-            {
-                m1 = 0.5f * (controlPoints[j + 2].transform.position - controlPoints[j].transform.position);
-            }
-            else
-            {
-                m1 = controlPoints[j + 1].transform.position - controlPoints[j].transform.position;
-            }
-
-            // set points of Hermite curve
-            Vector3 position;
-            float t;
-            float pointStep = 1.0f / numberOfPoints;
-
-            if (j == controlPoints.Count - 2)
-            {
-                pointStep = 1.0f / (numberOfPoints - 1.0f);
-                // last point of last segment should reach p1
-            }
-            for (int i = 0; i < numberOfPoints; i++)
-            {
-                t = i * pointStep;
-                position = (2.0f * t * t * t - 3.0f * t * t + 1.0f) * p0
-                    + (t * t * t - 2.0f * t * t + t) * m0
-                    + (-2.0f * t * t * t + 3.0f * t * t) * p1
-                    + (t * t * t - t * t) * m1;
-
-                // line.SetPosition(i + j * numberOfPoints,
-                // position);
-
-                // test
-                Vector3 testPos = position + Vector3.Scale(position, m0);
-
-                // backbone
-                debugPositions.Add(position);
-
-                //x & y offsets
-                var right = position + Vector3.right;
-                var left = position - Vector3.right;
-                var up = position + Vector3.up;
-                var down = position - Vector3.up;
-
-                debugPositions.Add(right);
-                debugPositions.Add(position - Vector3.right);
-                debugPositions.Add(position + Vector3.up);
-                debugPositions.Add(position - Vector3.up);
-
-                // diagonals
-                debugPositions.Add(position + Vector3.Normalize(Vector3.right + Vector3.up));
-                debugPositions.Add(position - Vector3.Normalize(Vector3.right + Vector3.up));
-                debugPositions.Add(position + Vector3.Normalize(Vector3.right - Vector3.up));
-                debugPositions.Add(position - Vector3.Normalize(Vector3.right - Vector3.up));
-            }
-        }
-    }
-
-
-    void DynamicSpline(List<Transform> controlPoints)
+    void InterpolateControlPoints(List<Transform> controlPoints)
     {
         Vector3 p0, p1, m0, m1;
 
@@ -215,41 +161,28 @@ public class SplineMaker2 : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        // foreach (var position in debugPositions)
-        // {
-        //     Gizmos.DrawSphere(position, 0.1f);
-        // }
-
-
-        // if (crossPoints.Length > 0)
-        // {
-        //     foreach (var position in crossPoints)
-        //     {
-        //         Gizmos.DrawSphere(position, 0.1f);
-        //     }
-        // }
-
-        // Mesh mesh = transform.GetComponent<MeshFilter>().sharedMesh;
-        // if (mesh.vertices.Length > 0)
-        // {
-        //     foreach (var vertex in mesh.vertices)
-        //     {
-        //         Gizmos.DrawSphere(vertex, 0.1f);
-        //     }
-        // }
-
+        Debug.Log(tubeVertices.Length);
         if (tubeVertices.Length > 0)
         {
-            foreach (var vertex in tubeVertices)
+            // foreach (var vertex in tubeVertices)
+            // {
+            //     // Debug.Log(vertex.point);
+            //     Gizmos.color = Color.red;
+            //     Gizmos.DrawSphere(vertex.point, 0.1f);
+            // }
+            for (int i = 0; i < interpolatedPositions.Length - 1; i++)
             {
-                // Debug.Log(vertex.point);
-                Gizmos.color = Color.red;
-                Gizmos.DrawSphere(vertex.point, 0.1f);
-            }
+				var vertex1 = interpolatedPositions[i];
+				var vertex2 = interpolatedPositions[i+1];
+				// Debug.Log(vertex.point);
+				Gizmos.color = Color.red;
+				// Gizmos.DrawSphere(vertex, 0.1f);
+				Gizmos.DrawLine(vertex1, vertex2);
+			}
         }
     }
 
-    private int DrawMesh1()
+    private int CreateTubeVertices()
     {
         for (int i = 0; i < interpolatedPositions.Length; i++)
         {
