@@ -261,31 +261,26 @@ public class RibbonMaker : MonoBehaviour
                     tris[start + 3] = tris[start + 2];
                     tris[start + 4] = tris[start + 1];
                     tris[start + 5] = theseVertices[(c + 1) % crossSegments];
-
                 }
 
 				// TEST:
-				int capTris = ((crossSegments - 2) / 2) + 1;
+				int capTris = ((crossSegments - 2) / 2);
+                if (crossSegments % 2 == 1) {
+					capTris++;
+				}
 				for (int i = 0; i < capTris ; i++)
 				{
-					// first half
 					Debug.Log(i + "first half===");
-					// first point
 					Debug.Log(i);
-					// second point
 					Debug.Log((crossSegments - i) - 1);
-					// third point
 					Debug.Log((crossSegments - i) - 2);
 
-					if (i < capTris - 1)
+					if (i < capTris - 1 || crossSegments % 2 == 0)
 					{
 						Debug.Log(i + "second half===");
 						Debug.Log((crossSegments - i) - 2);
-						// second half
 						Debug.Log(i);
-						// second point
 						Debug.Log(i + 1);
-						// third point
 					}
 
 					// delimiter
