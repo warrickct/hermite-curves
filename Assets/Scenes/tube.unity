@@ -541,7 +541,7 @@ MonoBehaviour:
   line: {fileID: 803610270}
   interpolationSteps: 5
   Material: {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
-  crossSegments: 6
+  crossSegments: 5
   crossPoints: []
   lastCrossSegments: 0
   controlPointTags:

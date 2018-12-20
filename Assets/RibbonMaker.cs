@@ -263,7 +263,36 @@ public class RibbonMaker : MonoBehaviour
                     tris[start + 5] = theseVertices[(c + 1) % crossSegments];
 
                 }
-            }
+
+				// TEST:
+				int capTris = ((crossSegments - 2) / 2) + 1;
+				for (int i = 0; i < capTris ; i++)
+				{
+					// first half
+					Debug.Log(i + "first half===");
+					// first point
+					Debug.Log(i);
+					// second point
+					Debug.Log((crossSegments - i) - 1);
+					// third point
+					Debug.Log((crossSegments - i) - 2);
+
+					if (i < capTris - 1)
+					{
+						Debug.Log(i + "second half===");
+						Debug.Log((crossSegments - i) - 2);
+						// second half
+						Debug.Log(i);
+						// second point
+						Debug.Log(i + 1);
+						// third point
+					}
+
+					// delimiter
+					Debug.Log(i + "=================================");
+                }
+
+			}
         }
 
         Mesh mesh = GetComponent<MeshFilter>().sharedMesh;
