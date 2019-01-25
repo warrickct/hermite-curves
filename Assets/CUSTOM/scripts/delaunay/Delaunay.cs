@@ -52,8 +52,16 @@ namespace Procedural
 			{
 				mFilter.mesh = new Mesh();
 			}
-			mFilter.mesh.vertices = sites.ToArray();
-			mFilter.mesh.triangles = triangles.ToArray();
+			// mFilter.mesh.vertices = sites.ToArray();
+			// mFilter.mesh.triangles = triangles.ToArray();
+
+			// only use relevant vertices and map em
+			var verts = new Vector3[triangles.Count * 3];
+			var triangleInts = new int[triangles.Count];
+			for (int i = 0; i < triangles.Count; i++)
+			{
+				
+			}
 		}
 
 		private void OnDrawGizmos()
