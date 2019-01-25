@@ -377,6 +377,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 103e4cf70864c93458d95b15c1dfa086, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mFilter: {fileID: 1681621413}
+  mRenderer: {fileID: 1681621414}
+  debugMesh: {fileID: 0}
 --- !u!4 &1681621412
 Transform:
   m_ObjectHideFlags: 0
