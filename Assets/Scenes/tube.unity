@@ -546,6 +546,7 @@ MonoBehaviour:
   lastCrossSegments: 0
   controlPointTags:
   - point
+  flattenFactor: 1
 --- !u!4 &803610273
 Transform:
   m_ObjectHideFlags: 0

@@ -10,6 +10,7 @@ namespace Procedural
 
 		public MeshFilter mFilter;
 		public MeshRenderer mRenderer;
+		public Material debugMat;
 
 		public List<Vertex> convexHullPoints;
 		public List<Vertex> vertices;
@@ -27,41 +28,44 @@ namespace Procedural
 			// Debug.Log(convexHullPoints.Count);
 
 			var triangles = TriangulatePoints.TriangulateConvexPolygon(convexHullPoints);
-			// Debug.Log(triangles.Count);
 		}
 
-		public Mesh debugMesh;
+		// var vertPointsGos = GameObject.FindGameObjectsWithTag("vert");
+		// vertices = new List<Vertex>();
+		// foreach (var vertGo in vertPointsGos)
+		// {
+		// 	vertices.Add(new Vertex(vertGo.transform.position));
+		// }
+
+		// convexHullPoints = JarvisMarch.GetConvexHull(vertices);
+		// // Debug.Log(convexHullPoints.Count);
+
+		// List<Triangle> triangles = TriangulatePoints.TriangulateConvexPolygon(convexHullPoints);
 		private void FixedUpdate()
 		{
-			// var vertPointsGos = GameObject.FindGameObjectsWithTag("vert");
-			// vertices = new List<Vertex>();
-			// foreach (var vertGo in vertPointsGos)
-			// {
-			// 	vertices.Add(new Vertex(vertGo.transform.position));
-			// }
-
-			// convexHullPoints = JarvisMarch.GetConvexHull(vertices);
-			// // Debug.Log(convexHullPoints.Count);
-
-			// List<Triangle> triangles = TriangulatePoints.TriangulateConvexPolygon(convexHullPoints);
-
 			var sites = GameObject.FindGameObjectsWithTag("vert").Select(go => go.transform.position).ToList();
 			var triangles = TriangulateByFlippingEdges(sites);
 
-			if (mFilter.mesh == null)
-			{
-				mFilter.mesh = new Mesh();
-			}
-			// mFilter.mesh.vertices = sites.ToArray();
-			// mFilter.mesh.triangles = triangles.ToArray();
-
-			// only use relevant vertices and map em
-			var verts = new Vector3[triangles.Count * 3];
-			var triangleInts = new int[triangles.Count];
+			var meshVertices = new List<Vector3>();
+			var meshTris = new List<int>();
 			for (int i = 0; i < triangles.Count; i++)
 			{
-				
+				meshTris.Add(i);
+				meshVertices.Add(triangles[i].v1.position);
+				meshTris.Add(i + 1);
+				meshVertices.Add(triangles[i].v2.position);
+				meshTris.Add(i + 2);
+				meshVertices.Add(triangles[i].v3.position);
 			}
+			Mesh mesh = new Mesh();
+			mesh.name = "delaunayMesh";
+			mesh.vertices = meshVertices.ToArray();
+			mesh.triangles = meshTris.ToArray();
+			mesh.RecalculateTangents();
+			mesh.RecalculateNormals();
+
+			mFilter.mesh = mesh;
+			mRenderer.material = debugMat;
 		}
 
 		private void OnDrawGizmos()
@@ -73,8 +77,6 @@ namespace Procedural
 				Gizmos.DrawLine(v1.position, v2.position);
 			}
 			Gizmos.DrawLine(convexHullPoints[convexHullPoints.Count - 1].position, convexHullPoints[0].position);
-
-			Gizmos.DrawMesh(debugMesh);
 		}
 
 		private static void FlipEdge(HalfEdge one)

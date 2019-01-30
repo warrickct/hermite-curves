@@ -108,7 +108,6 @@ public class RibbonMaker : MonoBehaviour
 
 		// TEST: 
 		Vector3[] interpolatedPositions = new Vector3[((controlPoints.Count-1) * interpolationSteps)];
-		Debug.Log(interpolatedPositions.Length); // 45
 
         Vector3 p0, p1, m0, m1;
         for (int j = 0; j < controlPoints.Count - 1; j++)
@@ -189,6 +188,24 @@ public class RibbonMaker : MonoBehaviour
 				Gizmos.DrawCube(position, Vector3.one);
 			}	
 		}
+
+		var curMesh = GetComponent<MeshFilter>().sharedMesh;
+		if (curMesh.vertices != null)
+        {
+            if (curMesh.vertices.Length > 2)
+            {
+				Gizmos.color = Color.green;
+				Gizmos.DrawSphere(curMesh.vertices[0], 0.3f);
+				Gizmos.DrawSphere(curMesh.vertices[curMesh.vertices.Length - 1], 0.3f);
+			}
+        }
+
+        foreach (var tri in testTris)
+        {
+            // Debug.Log(curMesh.vertices[tri]);
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawSphere(curMesh.vertices[tri], 0.3f);
+		}
 	}
 
     private TubeVertex[] CreateTubeVertices(Vector3[] interpolatedPositions)
@@ -201,10 +218,11 @@ public class RibbonMaker : MonoBehaviour
 		return tubeVertices;
 	}
 
-    /// <summary>
-    /// iterates through tube vertices and does the vertices calcuations for them.
-    /// </summary>
-    private void Show(TubeVertex[] tubeVertices)
+	public float flattenFactor;
+	/// <summary>
+	/// iterates through tube vertices and does the vertices calcuations for them.
+	/// </summary>
+	private void Show(TubeVertex[] tubeVertices)
     {
         if (null == tubeVertices ||
             tubeVertices.Length <= 1)
@@ -221,7 +239,7 @@ public class RibbonMaker : MonoBehaviour
             float theta = 2.0f * Mathf.PI / crossSegments;
             for (int c = 0; c < crossSegments; c++)
             {
-                crossPoints[c] = new Vector3(Mathf.Cos(theta * c) / 10.0f, Mathf.Sin(theta * c), 0);
+                crossPoints[c] = new Vector3(Mathf.Cos(theta * c) / flattenFactor, Mathf.Sin(theta * c), 0);
             }
             lastCrossSegments = crossSegments;
         }
@@ -233,21 +251,21 @@ public class RibbonMaker : MonoBehaviour
         int[] lastVertices = new int[crossSegments];
         int[] theseVertices = new int[crossSegments];
         Quaternion rotation = Quaternion.identity;
-        for (int p = 0; p < tubeVertices.Length; p++)
-        {
-            if (p < tubeVertices.Length - 1)
-                rotation = Quaternion.FromToRotation(Vector3.forward, tubeVertices[p + 1].point - tubeVertices[p].point);
+		for (int p = 0; p < tubeVertices.Length; p++)
+		{
+			if (p < tubeVertices.Length - 1)
+				rotation = Quaternion.FromToRotation(Vector3.forward, tubeVertices[p + 1].point - tubeVertices[p].point);
 
-            for (int c = 0; c < crossSegments; c++)
-            {
-                int vertexIndex = p * crossSegments + c;
-                meshVertices[vertexIndex] = tubeVertices[p].point + rotation * crossPoints[c] * tubeVertices[p].radius;
-                uvs[vertexIndex] = new Vector2((0.0f + c) / crossSegments, (0.0f + p) / tubeVertices.Length);
-                colors[vertexIndex] = Color.yellow;
-                // colors[vertexIndex] = tubeVertices[p].color;
+			for (int c = 0; c < crossSegments; c++)
+			{
+				int vertexIndex = p * crossSegments + c;
+				meshVertices[vertexIndex] = tubeVertices[p].point + rotation * crossPoints[c] * tubeVertices[p].radius;
+				uvs[vertexIndex] = new Vector2((0.0f + c) / crossSegments, (0.0f + p) / tubeVertices.Length);
+				colors[vertexIndex] = Color.yellow;
+				// colors[vertexIndex] = tubeVertices[p].color;
 
-                lastVertices[c] = theseVertices[c];
-                theseVertices[c] = p * crossSegments + c;
+				lastVertices[c] = theseVertices[c];
+				theseVertices[c] = p * crossSegments + c;
             }
             //make triangles
             if (p > 0)
@@ -262,39 +280,26 @@ public class RibbonMaker : MonoBehaviour
                     tris[start + 4] = tris[start + 1];
                     tris[start + 5] = theseVertices[(c + 1) % crossSegments];
                 }
-
-				// TEST:
-				int capTris = ((crossSegments - 2) / 2);
-                if (crossSegments % 2 == 1) {
-					capTris++;
-				}
-				for (int i = 0; i < capTris ; i++)
-				{
-					Debug.Log(i + "first half===");
-					Debug.Log(i);
-					Debug.Log((crossSegments - i) - 1);
-					Debug.Log((crossSegments - i) - 2);
-
-					if (i < capTris - 1 || crossSegments % 2 == 0)
-					{
-						Debug.Log(i + "second half===");
-						Debug.Log((crossSegments - i) - 2);
-						Debug.Log(i);
-						Debug.Log(i + 1);
-					}
-
-					// delimiter
-					Debug.Log(i + "=================================");
-                }
-
 			}
-        }
+		}
 
-        Mesh mesh = GetComponent<MeshFilter>().sharedMesh;
+		int[] tri1 = new int[] { 0, 1, 2 };
+		int[] tri2 = new int[] { 0, 2, 3 };
+		int[] tri3 = new int[] { 0, 3, 4 };
+		tris.Concat(tri1);
+		tris.Concat(tri2);
+		tris.Concat(tri3);
+        
+		testTris.AddRange(tri1.ToList());
+		testTris.AddRange(tri2.ToList());
+		testTris.AddRange(tri3.ToList());
+
+		Mesh mesh = GetComponent<MeshFilter>().sharedMesh;
         if (!mesh)
         {
             mesh = new Mesh();
         }
+        Debug.Log("vertices in mesh: " + meshVertices.Length);
         mesh.vertices = meshVertices;
         mesh.triangles = tris;
         mesh.RecalculateNormals();
@@ -303,4 +308,6 @@ public class RibbonMaker : MonoBehaviour
         GetComponent<MeshFilter>().sharedMesh = mesh;
 
     }
+
+	List<int> testTris = new List<int>();
 }
