@@ -197,15 +197,10 @@ public class RibbonMaker : MonoBehaviour
 				Gizmos.color = Color.green;
 				Gizmos.DrawSphere(curMesh.vertices[0], 0.3f);
 				Gizmos.DrawSphere(curMesh.vertices[curMesh.vertices.Length - 1], 0.3f);
+				Gizmos.color = Color.yellow;
+				Gizmos.DrawSphere(curMesh.vertices[curMesh.vertices.Length - crossSegments], 0.3f);
 			}
         }
-
-        foreach (var tri in testTris)
-        {
-            // Debug.Log(curMesh.vertices[tri]);
-			Gizmos.color = Color.yellow;
-			Gizmos.DrawSphere(curMesh.vertices[tri], 0.3f);
-		}
 	}
 
     private TubeVertex[] CreateTubeVertices(Vector3[] interpolatedPositions)
@@ -270,6 +265,26 @@ public class RibbonMaker : MonoBehaviour
             //make triangles
             if (p > 0)
             {
+                if (p == 1)
+                {
+					// first cap.
+					List<int> capTris = new List<int>();
+					for (int i = 1; i < crossSegments - 1; i++)
+                    {
+						capTris.Add(i + 1);
+						capTris.Add(i);
+						capTris.Add(0);
+					}
+					var combinedTris = new int[tris.Length + capTris.Count];
+					tris.CopyTo(combinedTris, 0);
+					capTris.ToArray().CopyTo(combinedTris, tris.Length);
+					// Debug.Log(tris.Length);
+					// Debug.Log(capTris.Count);
+					// Debug.Log("combined tris: "+ combinedTris.Length);
+					tris = combinedTris;
+                    // Debug.Log(tris.Length);
+				}
+
                 for (int c = 0; c < crossSegments; c++)
                 {
                     int start = (p * crossSegments + c) * 6;
@@ -282,17 +297,33 @@ public class RibbonMaker : MonoBehaviour
                 }
 			}
 		}
+        // final cap
+		List<int> endCapTris = new List<int>();
+		int reverseStart = meshVertices.Length - 1;
+		for (int i = reverseStart; i > reverseStart - crossSegments ; i--)
+        {
+			// Debug.Log(i);
+			// Debug.Log(meshVertices[i]);
 
-		int[] tri1 = new int[] { 0, 1, 2 };
-		int[] tri2 = new int[] { 0, 2, 3 };
-		int[] tri3 = new int[] { 0, 3, 4 };
-		tris.Concat(tri1);
-		tris.Concat(tri2);
-		tris.Concat(tri3);
-        
-		testTris.AddRange(tri1.ToList());
-		testTris.AddRange(tri2.ToList());
-		testTris.AddRange(tri3.ToList());
+			// endCapTris.Add(reverseStart);
+			// endCapTris.Add(i);
+			// endCapTris.Add(i + 1);
+            Debug.Log("triangle: " + i);
+            Debug.Log(reverseStart);
+            Debug.Log(i);
+            Debug.Log(i + 1);
+		}
+		var combined2 = new int[tris.Length + endCapTris.Count];
+		tris.CopyTo(combined2, 0);
+		endCapTris.ToArray().CopyTo(combined2, tris.Length);
+		// Debug.Log(tris.Length);
+		// Debug.Log(capTris.Count);
+		// Debug.Log("combined tris: "+ combinedTris.Length);
+		tris = combined2;
+        Debug.Log(tris.Length);
+
+
+
 
 		Mesh mesh = GetComponent<MeshFilter>().sharedMesh;
         if (!mesh)
@@ -306,8 +337,5 @@ public class RibbonMaker : MonoBehaviour
         mesh.uv = uvs;
         mesh.colors = colors;
         GetComponent<MeshFilter>().sharedMesh = mesh;
-
-    }
-
-	List<int> testTris = new List<int>();
+	}
 }
